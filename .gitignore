@@ -1,0 +1,50 @@
+# --- Go ---
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build cache
+/go.work
+/go.work.sum
+
+# --- Coverage ---
+*.coverprofile
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+
+# --- Config / Secrets ---
+config.json
+*.local.json
+.env
+.env.*
+
+# --- Temporary / Runtime ---
+tmp/
+.cache/
+
+# --- Vendor (if not used) ---
+/vendor/
+
+# --- Generated ---
+*.gen.go
+
+# --- Misc ---
+node_modules/
