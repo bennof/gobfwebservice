@@ -17,7 +17,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/bennof/go-bfwebservice/server"
+	"github.com/bennof/gobfwebservice/server"
 )
 
 // Recovery is an HTTP middleware that intercepts panics during request handling.

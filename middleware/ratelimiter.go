@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bennof/go-bfwebservice/server"
+	"github.com/bennof/gobfwebservice/server"
 )
 
 /* ---------- configuration ---------- */

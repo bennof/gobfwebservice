@@ -11,10 +11,10 @@ Summary
 */
 
 import (
-	"github.com/bennof/go-bfwebservice/logging"
-	"github.com/bennof/go-bfwebservice/middleware"
-	"github.com/bennof/go-bfwebservice/server"
-	"github.com/bennof/go-bfwebservice/templates"
+	"github.com/bennof/gobfwebservice/logging"
+	"github.com/bennof/gobfwebservice/middleware"
+	"github.com/bennof/gobfwebservice/server"
+	"github.com/bennof/gobfwebservice/templates"
 )
 
 // ExampleConfig bundles all configuration sections required by the example service.

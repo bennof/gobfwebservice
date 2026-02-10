@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bennof/go-bfwebservice/middleware"
+	"github.com/bennof/gobfwebservice/middleware"
 )
 
 // HelloHTML writes a minimal HTML response.

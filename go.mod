@@ -1,4 +1,4 @@
-module github.com/bennof/go-bfwebservice
+module github.com/bennof/gobfwebservice
 
 go 1.24.3
 
