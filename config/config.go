@@ -6,35 +6,59 @@ package config
 /*
 Package config provides a small, generic configuration manager for Go services.
 
-Summary
--------
-- Manages a typed configuration struct together with its source file path.
-- Supports loading from and saving to JSON files.
-- Keeps all internal fields private to enforce encapsulation.
-- Exposes controlled access via getters and setters.
-- Returns references to the underlying config so modifications are persisted.
-- Designed to be extended with defaults, validation, or environment overrides.
+Overview
+--------
+This package offers a lightweight, type-safe way to manage application
+configuration that is backed by a JSON file.
+
+Core ideas:
+- A configuration always consists of two parts:
+  1. A strongly typed config struct (generic parameter T)
+  2. The filename it was loaded from or saved to
+- The filename is treated as part of the configuration state
+- Callers work directly on the config struct via a pointer
+- Persistence is explicit (Load / Save / SaveAs)
+
+Design goals:
+- Minimal API surface
+- No reflection beyond encoding/json
+- Explicit, predictable behavior (no magic reloading)
+- Suitable for CLIs, services, and small tools
+- Easy to extend with defaults, validation, or env overrides
 
 Typical usage:
-- Create a Config[T] with New(...)
-- Load() or modify the config via Get()
-- Save() or SaveAs() to persist changes
+
+	cfg := config.New("config.json", MyConfig{})
+	_ = cfg.Load("config.json")
+
+	cfg.Get().Port = 8080
+	_ = cfg.Save()
+
+Thread-safety:
+- This type is NOT concurrency-safe by design
+- Intended to be configured at startup or in single-threaded CLI tools
 */
 
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
+	"path/filepath"
 )
 
-// Config wraps a typed configuration together with the file it is loaded from.
-// The fields are intentionally private to prevent uncontrolled modification.
+// Config wraps a typed configuration together with its associated file path.
+//
+// Both fields are intentionally unexported to enforce controlled access
+// via methods (encapsulation).
 type Config[T any] struct {
 	filename string
 	cfg      T
 }
 
 // New creates a new Config instance with an initial filename and config value.
+//
+// The filename may be empty and set later via SetFilename or Load.
 func New[T any](filename string, cfg T) *Config[T] {
 	return &Config[T]{
 		filename: filename,
@@ -42,7 +66,9 @@ func New[T any](filename string, cfg T) *Config[T] {
 	}
 }
 
-/* ---------- filename handling ---------- */
+/* --------------------------------------------------------------------------
+   Filename handling
+   -------------------------------------------------------------------------- */
 
 // Filename returns the currently associated configuration file path.
 func (c *Config[T]) Filename() string {
@@ -50,36 +76,48 @@ func (c *Config[T]) Filename() string {
 }
 
 // SetFilename sets or updates the configuration file path.
+//
+// This does not read or write any files.
 func (c *Config[T]) SetFilename(path string) {
 	c.filename = path
 }
 
-/* ---------- config access ---------- */
+/* --------------------------------------------------------------------------
+   Config access
+   -------------------------------------------------------------------------- */
 
-// Get returns a pointer to the underlying configuration.
-// Modifying the returned value directly affects the stored config.
+// Get returns a pointer to the underlying configuration struct.
+//
+// Mutating the returned value directly modifies the stored configuration.
+// This is intentional to keep usage ergonomic.
 func (c *Config[T]) Get() *T {
 	return &c.cfg
 }
 
-/* ---------- persistence ---------- */
+/* --------------------------------------------------------------------------
+   Persistence
+   -------------------------------------------------------------------------- */
 
 // Load reads a JSON configuration file and unmarshals it into the config.
-// The internal filename is updated to the loaded path.
-func (c *Config[T]) Load(filepath string) error {
-	b, err := os.ReadFile(filepath)
+//
+// On success, the internal filename is updated to the loaded path.
+func (c *Config[T]) Load(path string) error {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
+
 	if err := json.Unmarshal(b, &c.cfg); err != nil {
 		return err
 	}
-	c.filename = filepath
+
+	c.filename = path
 	return nil
 }
 
-// Save writes the current configuration to the previously set filename.
-// Returns an error if no filename is configured.
+// Save writes the current configuration to the previously configured filename.
+//
+// Returns ErrNoFilename if no filename has been set.
 func (c *Config[T]) Save() error {
 	if c.filename == "" {
 		return ErrNoFilename
@@ -87,17 +125,28 @@ func (c *Config[T]) Save() error {
 	return c.SaveAs(c.filename)
 }
 
-// SaveAs writes the current configuration to the given file path
-// and updates the internal filename accordingly.
-func (c *Config[T]) SaveAs(filepath string) error {
+// SaveAs writes the current configuration to the given file path.
+//
+// Parent directories are created automatically.
+// The internal filename is updated on success.
+func (c *Config[T]) SaveAs(filename string) error {
 	b, err := json.MarshalIndent(c.cfg, "", "  ")
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath, b, 0644); err != nil {
+
+	dir := filepath.Dir(filename)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Fatalf("failed to create directory: %v", err)
+		}
+	}
+
+	if err := os.WriteFile(filename, b, 0644); err != nil {
 		return err
 	}
-	c.filename = filepath
+
+	c.filename = filename
 	return nil
 }
 
